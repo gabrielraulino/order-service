@@ -1,6 +1,6 @@
 package com.ms.order.config;
 
-import com.ms.order.auth.JwtAuthenticationFilter;
+import com.ms.order.auth.GatewayAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -12,13 +12,18 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+/**
+ * Configuração de segurança simplificada.
+ * A autenticação é delegada ao API Gateway que valida o JWT e injeta headers HTTP.
+ * Este serviço apenas lê os headers e configura o SecurityContext para autorização.
+ */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final GatewayAuthenticationFilter gatewayAuthenticationFilter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -26,7 +31,7 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // Public endpoints
+                        // Public endpoints (para acesso via Swagger UI local)
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("POST", "/orders/create").permitAll() // Para comunicação entre serviços
                         
@@ -37,12 +42,12 @@ public class SecurityConfig {
                         // Admin endpoints
                         .requestMatchers("GET", "/orders").hasRole("ADMIN")
                         .requestMatchers("GET", "/orders/{id}").hasRole("ADMIN")
-
                         .requestMatchers("/orders/**").hasRole("ADMIN")
+                        
                         // All other requests require authentication
                         .anyRequest().authenticated()
                 )
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(gatewayAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

@@ -2,68 +2,48 @@ package com.ms.order.auth;
 
 import com.ms.order.exception.ResourceNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
+/**
+ * Serviço para obter informações do usuário atual.
+ * As informações são extraídas dos headers HTTP que são injetados pelo API Gateway
+ * após validação do JWT no serviço de autenticação.
+ * 
+ * Headers esperados:
+ * - X-User-Id: ID do usuário
+ * - X-User-Email: Email do usuário
+ * - X-User-Role: Role do usuário (USER, ADMIN)
+ * - X-Is-Admin: Se o usuário é admin (true/false)
+ */
 @Service
-@RequiredArgsConstructor
 public class CurrentUserService {
 
-    private final JwtService jwtService;
-
-    public String getCurrentUserEmail() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new ResourceNotFoundException("Authentication", "field", "User not authenticated");
+    private HttpServletRequest getRequest() {
+        ServletRequestAttributes attributes = 
+            (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        if (attributes == null) {
+            throw new ResourceNotFoundException("Authentication", "field", "No request context available");
         }
-        
-        Object principal = authentication.getPrincipal();
-        if (principal instanceof String) {
-            return (String) principal;
-        }
-        
-        throw new ResourceNotFoundException("Authentication", "field", "Unable to extract user email from authentication");
+        return attributes.getRequest();
     }
 
+
     public Long getCurrentUserId() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new ResourceNotFoundException("Authentication", "field", "User not authenticated");
+        String userId = getRequest().getHeader("X-User-Id");
+        if (userId == null || userId.isBlank()) {
+            throw new ResourceNotFoundException("Authentication", "field", "User ID not found in request");
         }
-
-        ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-        if (attributes != null) {
-            HttpServletRequest request = attributes.getRequest();
-            String authHeader = request.getHeader("Authorization");
-
-            if (authHeader != null && authHeader.startsWith("Bearer ")) {
-                try {
-                    String jwt = authHeader.substring(7);
-                    return jwtService.extractUserId(jwt);
-                } catch (Exception e) {
-                    throw new ResourceNotFoundException("Authentication", "field", "Unable to extract user ID from token");
-                }
-            }
+        try {
+            return Long.parseLong(userId);
+        } catch (NumberFormatException e) {
+            throw new ResourceNotFoundException("Authentication", "field", "Invalid user ID format");
         }
-
-        throw new ResourceNotFoundException("Authentication", "field", "No authorization header found");
     }
 
     public boolean isAdmin() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return false;
-        }
-        
-        return authentication.getAuthorities().stream()
-                .anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"));
+        String isAdmin = getRequest().getHeader("X-Is-Admin");
+        return "true".equalsIgnoreCase(isAdmin);
     }
 }
-
