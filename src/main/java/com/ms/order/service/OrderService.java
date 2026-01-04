@@ -2,7 +2,6 @@ package com.ms.order.service;
 
 import com.ms.order.auth.CurrentUserService;
 import com.ms.order.client.ProductService;
-import com.ms.order.client.UserService;
 import com.ms.order.dto.*;
 import com.ms.order.exception.ResourceNotFoundException;
 import com.ms.order.exception.InvalidOperationException;
@@ -18,7 +17,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -34,8 +32,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class OrderService {
     private final OrderRepository repository;
 
-    private final UserService userService;
-
     private final ProductService productService;
 
     private final OrderProducer orderProducer;
@@ -47,14 +43,6 @@ public class OrderService {
      */
     public void publishUpdateStockEvent(UpdateStockEvent event) {
         orderProducer.publishUpdateStockEvent(event);
-    }
-
-    /**
-     * Publishes OrderCreatedEvent to start order processing workflow.
-     */
-    public void publishOrderCreatedEvent(Long orderId, Long userId) {
-        com.ms.order.dto.OrderCreatedEvent event = new com.ms.order.dto.OrderCreatedEvent(orderId, userId);
-        orderProducer.publishOrderCreatedEvent(event);
     }
 
     /**
@@ -89,8 +77,6 @@ public class OrderService {
     }
 
     public List<OrderDTO> findByUserId(Long id){
-        Optional.ofNullable(userService.getUser(id)).orElseThrow(() -> new ResourceNotFoundException("User", id));
-
         return repository.findByUserId(id).stream().map(this::buildOrderDTO).toList();
     }
 
@@ -103,10 +89,6 @@ public class OrderService {
     @Transactional
     public OrderDTO createOrder(CreateOrderDTO orderData) {
         log.info("Creating order for user: {}", orderData.userId());
-
-        // Validate user exists
-        Optional.ofNullable(userService.getUser(orderData.userId()))
-                .orElseThrow(() -> new ResourceNotFoundException("User", orderData.userId()));
 
         // Create order
         Order order = Order.builder()

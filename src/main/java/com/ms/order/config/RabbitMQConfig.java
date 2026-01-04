@@ -16,15 +16,6 @@ public class RabbitMQConfig {
     @Value("${broker.queue.order.stock-update-failed.name}")
     private String stockUpdateFailedQueue;
 
-    @Value("${broker.queue.order.created.name}")
-    private String orderCreatedQueue;
-
-    @Value("${broker.queue.order.processed.name}")
-    private String orderProcessedQueue;
-
-    @Value("${broker.queue.order.shipped.name}")
-    private String orderShippedQueue;
-
     @Bean
     public Queue checkoutQueue() {
         return new Queue(checkoutQueue, true);
@@ -33,21 +24,6 @@ public class RabbitMQConfig {
     @Bean
     public Queue stockUpdateFailedQueue() {
         return new Queue(stockUpdateFailedQueue, true);
-    }
-
-    @Bean
-    public Queue orderCreatedQueue() {
-        return new Queue(orderCreatedQueue, true);
-    }
-
-    @Bean
-    public Queue orderProcessedQueue() {
-        return new Queue(orderProcessedQueue, true);
-    }
-
-    @Bean
-    public Queue orderShippedQueue() {
-        return new Queue(orderShippedQueue, true);
     }
 
     @Bean

@@ -11,7 +11,6 @@ O Order Service é responsável por:
 - ✅ Cancelamento de pedidos
 - ✅ Gerenciamento de status de pedidos
 - ✅ Publicação de eventos RabbitMQ (UpdateStockEvent, OrderCancelledEvent)
-- ✅ Processamento assíncrono de eventos
 - ✅ Recuperação automática de falhas (cancelamento automático)
 
 ## 🚀 Executando
@@ -135,7 +134,6 @@ Recebido quando um checkout é realizado no Cart Service.
 **Ação**:
 1. Cria pedido com status PENDING
 2. Publica `UpdateStockEvent` para atualizar estoque
-3. Publica `OrderCreatedEvent` para iniciar processamento
 
 ### StockUpdateFailedEvent (Queue: `order.stock-update-failed`) - Consumidor
 
@@ -165,10 +163,6 @@ Publicado após criar pedido para atualizar estoque.
 
 Publicado quando pedido é cancelado para restaurar estoque.
 
-#### OrderCreatedEvent (Queue: `order.created`)
-
-Publicado após criar pedido para iniciar processamento.
-
 ## ⚙️ Configuração
 
 ### application.properties
@@ -190,7 +184,6 @@ spring.rabbitmq.addresses=${SPRING_RABBITMQ_ADDRESSES}
 broker.queue.order.checkout.name=cart.checkout
 broker.queue.order.cancelled.name=order.cancelled
 broker.queue.order.stock-update-failed.name=order.stock-update-failed
-broker.queue.order.created.name=order.created
 
 # Eureka
 eureka.client.serviceUrl.defaultZone=http://localhost:8761/eureka/
@@ -236,8 +229,7 @@ order/
 │   ├── controller/
 │   │   └── OrderController.java        # Endpoints REST
 │   ├── service/
-│   │   ├── OrderService.java           # Lógica de negócio
-│   │   └── OrderProcessingService.java # Processamento de pedidos
+│   │   └── OrderService.java           # Lógica de negócio
 │   ├── repository/
 │   │   └── OrderRepository.java        # JPA Repository
 │   ├── model/
@@ -295,13 +287,6 @@ Publicador RabbitMQ:
 
 - `publishUpdateStockEvent()`: Publica evento para atualizar estoque
 - `publishOrderCancelledEvent()`: Publica evento de cancelamento
-- `publishOrderCreatedEvent()`: Publica evento de criação
-
-### OrderProcessingService
-
-Serviço de processamento de pedidos:
-
-- Processa workflow de pedidos (PENDING → PROCESSING → SHIPPED → DELIVERED)
 
 ## 🔗 Comunicação com Outros Serviços
 

@@ -67,10 +67,6 @@ public class OrderConsumer {
             orderService.publishUpdateStockEvent(stockEvent);
             log.info("UpdateStockEvent published for order: {}", order.id());
 
-            // Publish OrderCreatedEvent to start order processing workflow
-            orderService.publishOrderCreatedEvent(order.id(), order.userId());
-            log.info("OrderCreatedEvent published for order: {}", order.id());
-
         } catch (Exception e) {
             log.error("Error processing CheckoutEvent for cart: {}", event.cartId(), e);
             // Rejeita e não re enfileira para evitar 'loop' infinito
